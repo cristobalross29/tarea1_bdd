@@ -1,219 +1,184 @@
--- IIC2413 Tarea 1 - Torneo de Gaming
+-- Tarea 1 IIC2413 - Esquema basado en diagrama entregado
 -- PostgreSQL 14+
 
-DROP TABLE IF EXISTS player_match_stats CASCADE;
-DROP TABLE IF EXISTS matches CASCADE;
-DROP TABLE IF EXISTS tournament_sponsors CASCADE;
-DROP TABLE IF EXISTS tournament_registrations CASCADE;
-DROP TABLE IF EXISTS sponsors CASCADE;
-DROP TABLE IF EXISTS players CASCADE;
-DROP TABLE IF EXISTS teams CASCADE;
-DROP TABLE IF EXISTS tournaments CASCADE;
-DROP TYPE IF EXISTS tournament_phase CASCADE;
+DROP TABLE IF EXISTS ESTADISTICA_INDIVIDUAL CASCADE;
+DROP TABLE IF EXISTS PARTIDA CASCADE;
+DROP TABLE IF EXISTS SPONSOR_TORNEO CASCADE;
+DROP TABLE IF EXISTS SPONSOR CASCADE;
+DROP TABLE IF EXISTS INSCRIPCION CASCADE;
+DROP TABLE IF EXISTS JUGADOR CASCADE;
+DROP TABLE IF EXISTS EQUIPO CASCADE;
+DROP TABLE IF EXISTS TORNEO CASCADE;
 
-CREATE TYPE tournament_phase AS ENUM (
-  'group_stage',
-  'quarterfinal',
-  'semifinal',
-  'final'
-);
-
-CREATE TABLE tournaments (
-  tournament_id SERIAL PRIMARY KEY,
-  name VARCHAR(120) NOT NULL UNIQUE,
-  game_title VARCHAR(120) NOT NULL,
-  start_date DATE NOT NULL,
-  end_date DATE NOT NULL,
+CREATE TABLE TORNEO (
+  id_torneo BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE,
+  videojuego VARCHAR(120) NOT NULL,
+  fecha_inicio DATE NOT NULL,
+  fecha_fin DATE NOT NULL,
   prize_pool_usd NUMERIC(12,2) NOT NULL CHECK (prize_pool_usd >= 0),
-  max_teams INTEGER NOT NULL CHECK (max_teams > 1),
-  CHECK (end_date >= start_date)
+  max_equipos INT NOT NULL CHECK (max_equipos > 1),
+  CHECK (fecha_fin >= fecha_inicio)
 );
 
-CREATE TABLE teams (
-  team_id SERIAL PRIMARY KEY,
-  name VARCHAR(80) NOT NULL UNIQUE,
-  created_at DATE NOT NULL DEFAULT CURRENT_DATE,
-  captain_player_id INTEGER
+CREATE TABLE EQUIPO (
+  id_equipo BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre VARCHAR(100) NOT NULL UNIQUE,
+  fecha_creacion DATE NOT NULL,
+  capitan_gamertag VARCHAR(50)
 );
 
-CREATE TABLE players (
-  player_id SERIAL PRIMARY KEY,
-  gamertag VARCHAR(50) NOT NULL UNIQUE,
-  real_name VARCHAR(120) NOT NULL,
+CREATE TABLE JUGADOR (
+  gamertag VARCHAR(50) PRIMARY KEY,
+  nombre_real VARCHAR(120) NOT NULL,
   email VARCHAR(255) NOT NULL UNIQUE,
-  birth_date DATE NOT NULL,
-  country VARCHAR(60) NOT NULL,
-  team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE RESTRICT
+  fecha_nacimiento DATE NOT NULL,
+  pais_origen VARCHAR(80) NOT NULL,
+  id_equipo BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT
 );
 
-ALTER TABLE teams
-  ADD CONSTRAINT fk_teams_captain
-  FOREIGN KEY (captain_player_id)
-  REFERENCES players(player_id)
-  ON DELETE RESTRICT;
+ALTER TABLE EQUIPO
+  ADD CONSTRAINT fk_equipo_capitan
+  FOREIGN KEY (capitan_gamertag)
+  REFERENCES JUGADOR(gamertag)
+  ON DELETE RESTRICT
+  DEFERRABLE INITIALLY DEFERRED;
 
-CREATE TABLE tournament_registrations (
-  tournament_id INTEGER NOT NULL REFERENCES tournaments(tournament_id) ON DELETE CASCADE,
-  team_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE RESTRICT,
-  registered_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  PRIMARY KEY (tournament_id, team_id)
+CREATE TABLE INSCRIPCION (
+  id_torneo BIGINT NOT NULL REFERENCES TORNEO(id_torneo) ON DELETE CASCADE,
+  id_equipo BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT,
+  fecha_inscripcion TIMESTAMP NOT NULL DEFAULT NOW(),
+  grupo CHAR(1),
+  PRIMARY KEY (id_torneo, id_equipo),
+  CHECK (grupo IS NULL OR grupo IN ('A','B'))
 );
 
-CREATE TABLE matches (
-  match_id SERIAL PRIMARY KEY,
-  tournament_id INTEGER NOT NULL REFERENCES tournaments(tournament_id) ON DELETE CASCADE,
-  team_a_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE RESTRICT,
-  team_b_id INTEGER NOT NULL REFERENCES teams(team_id) ON DELETE RESTRICT,
-  scheduled_at TIMESTAMP NOT NULL,
-  score_a INTEGER NOT NULL CHECK (score_a >= 0),
-  score_b INTEGER NOT NULL CHECK (score_b >= 0),
-  phase tournament_phase NOT NULL,
-  CHECK (team_a_id <> team_b_id)
+CREATE TABLE PARTIDA (
+  id_partida BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  id_torneo BIGINT NOT NULL REFERENCES TORNEO(id_torneo) ON DELETE CASCADE,
+  fecha_hora_programada TIMESTAMP NOT NULL,
+  fase VARCHAR(20) NOT NULL CHECK (fase IN ('grupos', 'cuartos', 'semifinal', 'final')),
+  equipo_a_id BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT,
+  equipo_b_id BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT,
+  puntaje_equipo_a INT NOT NULL CHECK (puntaje_equipo_a >= 0),
+  puntaje_equipo_b INT NOT NULL CHECK (puntaje_equipo_b >= 0),
+  CHECK (equipo_a_id <> equipo_b_id)
 );
 
-CREATE TABLE player_match_stats (
-  match_id INTEGER NOT NULL REFERENCES matches(match_id) ON DELETE CASCADE,
-  player_id INTEGER NOT NULL REFERENCES players(player_id) ON DELETE RESTRICT,
-  kos INTEGER NOT NULL CHECK (kos >= 0),
-  restarts INTEGER NOT NULL CHECK (restarts >= 0),
-  assists INTEGER NOT NULL CHECK (assists >= 0),
-  PRIMARY KEY (match_id, player_id)
+CREATE TABLE ESTADISTICA_INDIVIDUAL (
+  id_partida BIGINT NOT NULL REFERENCES PARTIDA(id_partida) ON DELETE CASCADE,
+  gamertag VARCHAR(50) NOT NULL REFERENCES JUGADOR(gamertag) ON DELETE RESTRICT,
+  kos INT NOT NULL CHECK (kos >= 0),
+  restarts INT NOT NULL CHECK (restarts >= 0),
+  assists INT NOT NULL CHECK (assists >= 0),
+  PRIMARY KEY (id_partida, gamertag)
 );
 
-CREATE TABLE sponsors (
-  sponsor_id SERIAL PRIMARY KEY,
-  name VARCHAR(120) NOT NULL UNIQUE,
-  industry VARCHAR(80) NOT NULL
+CREATE TABLE SPONSOR (
+  id_sponsor BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  nombre VARCHAR(120) NOT NULL UNIQUE,
+  industria VARCHAR(80) NOT NULL
 );
 
-CREATE TABLE tournament_sponsors (
-  tournament_id INTEGER NOT NULL REFERENCES tournaments(tournament_id) ON DELETE CASCADE,
-  sponsor_id INTEGER NOT NULL REFERENCES sponsors(sponsor_id) ON DELETE CASCADE,
-  contribution_usd NUMERIC(12,2) NOT NULL CHECK (contribution_usd > 0),
-  PRIMARY KEY (tournament_id, sponsor_id)
+CREATE TABLE SPONSOR_TORNEO (
+  id_sponsor BIGINT NOT NULL REFERENCES SPONSOR(id_sponsor) ON DELETE CASCADE,
+  id_torneo BIGINT NOT NULL REFERENCES TORNEO(id_torneo) ON DELETE CASCADE,
+  monto_usd NUMERIC(12,2) NOT NULL CHECK (monto_usd > 0),
+  PRIMARY KEY (id_sponsor, id_torneo)
 );
 
-CREATE INDEX idx_players_team ON players(team_id);
-CREATE INDEX idx_matches_tournament ON matches(tournament_id);
-CREATE INDEX idx_matches_phase ON matches(phase);
-CREATE INDEX idx_stats_player ON player_match_stats(player_id);
+CREATE INDEX idx_jugador_equipo ON JUGADOR(id_equipo);
+CREATE INDEX idx_inscripcion_torneo ON INSCRIPCION(id_torneo);
+CREATE INDEX idx_partida_torneo ON PARTIDA(id_torneo);
+CREATE INDEX idx_partida_fase ON PARTIDA(fase);
 
--- Restricción: capitán debe pertenecer al mismo equipo
-CREATE OR REPLACE FUNCTION validate_team_captain_membership()
+-- Regla: capitán debe pertenecer al equipo
+CREATE OR REPLACE FUNCTION fn_capitan_en_su_equipo()
 RETURNS TRIGGER AS $$
 DECLARE
-  captain_team_id INTEGER;
+  equipo_capitan BIGINT;
 BEGIN
-  IF NEW.captain_player_id IS NULL THEN
+  IF NEW.capitan_gamertag IS NULL THEN
     RETURN NEW;
   END IF;
 
-  SELECT team_id INTO captain_team_id
-  FROM players
-  WHERE player_id = NEW.captain_player_id;
+  SELECT id_equipo INTO equipo_capitan
+  FROM JUGADOR
+  WHERE gamertag = NEW.capitan_gamertag;
 
-  IF captain_team_id IS NULL THEN
-    RAISE EXCEPTION 'Captain player % does not exist', NEW.captain_player_id;
-  END IF;
-
-  IF captain_team_id <> NEW.team_id THEN
-    RAISE EXCEPTION 'Captain player % must belong to team %', NEW.captain_player_id, NEW.team_id;
+  IF equipo_capitan IS NULL OR equipo_capitan <> NEW.id_equipo THEN
+    RAISE EXCEPTION 'El capitán % debe pertenecer al equipo %', NEW.capitan_gamertag, NEW.id_equipo;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_validate_team_captain
-BEFORE UPDATE OF captain_player_id ON teams
-FOR EACH ROW
-EXECUTE FUNCTION validate_team_captain_membership();
+CREATE TRIGGER trg_capitan_en_su_equipo
+BEFORE INSERT OR UPDATE OF capitan_gamertag ON EQUIPO
+FOR EACH ROW EXECUTE FUNCTION fn_capitan_en_su_equipo();
 
--- Restricción: máximo de equipos por torneo
-CREATE OR REPLACE FUNCTION enforce_tournament_capacity()
+-- Regla: no superar cupo de torneo
+CREATE OR REPLACE FUNCTION fn_validar_cupo_torneo()
 RETURNS TRIGGER AS $$
 DECLARE
-  max_slots INTEGER;
-  current_count INTEGER;
+  maximo INT;
+  inscritos INT;
 BEGIN
-  SELECT max_teams INTO max_slots
-  FROM tournaments
-  WHERE tournament_id = NEW.tournament_id
-  FOR UPDATE;
+  SELECT max_equipos INTO maximo FROM TORNEO WHERE id_torneo = NEW.id_torneo FOR UPDATE;
+  SELECT COUNT(*) INTO inscritos FROM INSCRIPCION WHERE id_torneo = NEW.id_torneo;
 
-  SELECT COUNT(*) INTO current_count
-  FROM tournament_registrations
-  WHERE tournament_id = NEW.tournament_id;
-
-  IF current_count >= max_slots THEN
-    RAISE EXCEPTION 'Tournament % is full (% teams max)', NEW.tournament_id, max_slots;
+  IF inscritos >= maximo THEN
+    RAISE EXCEPTION 'Torneo % lleno: cupo máximo % equipos', NEW.id_torneo, maximo;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_enforce_tournament_capacity
-BEFORE INSERT ON tournament_registrations
-FOR EACH ROW
-EXECUTE FUNCTION enforce_tournament_capacity();
+CREATE TRIGGER trg_validar_cupo_torneo
+BEFORE INSERT ON INSCRIPCION
+FOR EACH ROW EXECUTE FUNCTION fn_validar_cupo_torneo();
 
--- Restricción: equipos de la partida deben estar inscritos al torneo
-CREATE OR REPLACE FUNCTION validate_match_teams_registered()
+-- Regla: equipos de partida deben estar inscritos en ese torneo
+CREATE OR REPLACE FUNCTION fn_partida_equipos_inscritos()
 RETURNS TRIGGER AS $$
 BEGIN
-  IF NOT EXISTS (
-    SELECT 1 FROM tournament_registrations tr
-    WHERE tr.tournament_id = NEW.tournament_id AND tr.team_id = NEW.team_a_id
-  ) THEN
-    RAISE EXCEPTION 'Team A % is not registered in tournament %', NEW.team_a_id, NEW.tournament_id;
+  IF NOT EXISTS (SELECT 1 FROM INSCRIPCION WHERE id_torneo = NEW.id_torneo AND id_equipo = NEW.equipo_a_id) THEN
+    RAISE EXCEPTION 'Equipo A % no inscrito en torneo %', NEW.equipo_a_id, NEW.id_torneo;
   END IF;
 
-  IF NOT EXISTS (
-    SELECT 1 FROM tournament_registrations tr
-    WHERE tr.tournament_id = NEW.tournament_id AND tr.team_id = NEW.team_b_id
-  ) THEN
-    RAISE EXCEPTION 'Team B % is not registered in tournament %', NEW.team_b_id, NEW.tournament_id;
+  IF NOT EXISTS (SELECT 1 FROM INSCRIPCION WHERE id_torneo = NEW.id_torneo AND id_equipo = NEW.equipo_b_id) THEN
+    RAISE EXCEPTION 'Equipo B % no inscrito en torneo %', NEW.equipo_b_id, NEW.id_torneo;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_validate_match_teams_registered
-BEFORE INSERT OR UPDATE OF tournament_id, team_a_id, team_b_id ON matches
-FOR EACH ROW
-EXECUTE FUNCTION validate_match_teams_registered();
+CREATE TRIGGER trg_partida_equipos_inscritos
+BEFORE INSERT OR UPDATE OF id_torneo, equipo_a_id, equipo_b_id ON PARTIDA
+FOR EACH ROW EXECUTE FUNCTION fn_partida_equipos_inscritos();
 
--- Restricción: stats solo para jugadores que pertenecen a equipos del match
-CREATE OR REPLACE FUNCTION validate_player_stats_membership()
+-- Regla: stats solo de jugadores que juegan esa partida
+CREATE OR REPLACE FUNCTION fn_stats_jugador_valido_en_partida()
 RETURNS TRIGGER AS $$
 DECLARE
-  ta INTEGER;
-  tb INTEGER;
-  pteam INTEGER;
+  ea BIGINT;
+  eb BIGINT;
+  eq_jugador BIGINT;
 BEGIN
-  SELECT team_a_id, team_b_id INTO ta, tb
-  FROM matches
-  WHERE match_id = NEW.match_id;
+  SELECT equipo_a_id, equipo_b_id INTO ea, eb FROM PARTIDA WHERE id_partida = NEW.id_partida;
+  SELECT id_equipo INTO eq_jugador FROM JUGADOR WHERE gamertag = NEW.gamertag;
 
-  IF ta IS NULL THEN
-    RAISE EXCEPTION 'Match % does not exist', NEW.match_id;
-  END IF;
-
-  SELECT team_id INTO pteam
-  FROM players
-  WHERE player_id = NEW.player_id;
-
-  IF pteam NOT IN (ta, tb) THEN
-    RAISE EXCEPTION 'Player % is not part of match teams (% vs %)', NEW.player_id, ta, tb;
+  IF eq_jugador NOT IN (ea, eb) THEN
+    RAISE EXCEPTION 'Jugador % no pertenece a equipos de la partida %', NEW.gamertag, NEW.id_partida;
   END IF;
 
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql;
 
-CREATE TRIGGER trg_validate_player_stats_membership
-BEFORE INSERT OR UPDATE OF match_id, player_id ON player_match_stats
-FOR EACH ROW
-EXECUTE FUNCTION validate_player_stats_membership();
+CREATE TRIGGER trg_stats_jugador_valido_en_partida
+BEFORE INSERT OR UPDATE OF id_partida, gamertag ON ESTADISTICA_INDIVIDUAL
+FOR EACH ROW EXECUTE FUNCTION fn_stats_jugador_valido_en_partida();

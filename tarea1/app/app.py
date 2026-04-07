@@ -4,10 +4,10 @@ import psycopg2
 from psycopg2.extras import RealDictCursor
 
 app = Flask(__name__)
-app.secret_key = "t1-bdd-secret"
+app.secret_key = "t1-bdd"
 
 
-def get_db_connection():
+def db_conn():
     return psycopg2.connect(
         host=os.getenv("DB_HOST", "localhost"),
         port=os.getenv("DB_PORT", "5432"),
@@ -19,357 +19,222 @@ def get_db_connection():
 
 @app.route("/")
 def home():
-    return redirect(url_for("tournaments"))
+    return redirect(url_for("torneos"))
 
 
-@app.route("/tournaments")
-def tournaments():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-    cur.execute(
-        """
-        SELECT tournament_id, name, game_title, start_date, end_date, prize_pool_usd, max_teams
-        FROM tournaments
-        ORDER BY start_date;
-        """
+@app.route("/torneos")
+def torneos():
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id_torneo, nombre, videojuego, fecha_inicio, fecha_fin, prize_pool_usd, max_equipos FROM torneo ORDER BY fecha_inicio;")
+    rows = cur.fetchall(); cur.close(); conn.close()
+    return render_template("torneos.html", torneos=rows)
+
+
+@app.route("/torneos/<int:id_torneo>")
+def torneo_detalle(id_torneo):
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+
+    cur.execute("SELECT * FROM torneo WHERE id_torneo=%s", (id_torneo,)); torneo = cur.fetchone()
+
+    cur.execute("""
+    WITH juegos AS (
+      SELECT p.id_torneo, p.equipo_a_id id_equipo,
+             CASE WHEN p.puntaje_equipo_a > p.puntaje_equipo_b THEN 1 ELSE 0 END g,
+             CASE WHEN p.puntaje_equipo_a = p.puntaje_equipo_b THEN 1 ELSE 0 END e,
+             CASE WHEN p.puntaje_equipo_a < p.puntaje_equipo_b THEN 1 ELSE 0 END d
+      FROM partida p WHERE p.fase='grupos'
+      UNION ALL
+      SELECT p.id_torneo, p.equipo_b_id,
+             CASE WHEN p.puntaje_equipo_b > p.puntaje_equipo_a THEN 1 ELSE 0 END,
+             CASE WHEN p.puntaje_equipo_a = p.puntaje_equipo_b THEN 1 ELSE 0 END,
+             CASE WHEN p.puntaje_equipo_b < p.puntaje_equipo_a THEN 1 ELSE 0 END
+      FROM partida p WHERE p.fase='grupos'
     )
-    data = cur.fetchall()
-    cur.close()
-    conn.close()
-    return render_template("tournaments.html", tournaments=data)
+    SELECT e.nombre equipo, COUNT(*) pj, SUM(g) ganadas, SUM(e) empatadas, SUM(d) perdidas,
+           SUM(g)*3 + SUM(e) puntos
+    FROM juegos j JOIN equipo e ON e.id_equipo=j.id_equipo
+    WHERE j.id_torneo=%s
+    GROUP BY e.nombre
+    ORDER BY puntos DESC, ganadas DESC, equipo;
+    """, (id_torneo,))
+    tabla = cur.fetchall()
 
+    cur.execute("""
+    SELECT p.fecha_hora_programada, p.fase, ea.nombre equipo_a, p.puntaje_equipo_a, p.puntaje_equipo_b, eb.nombre equipo_b
+    FROM partida p
+    JOIN equipo ea ON ea.id_equipo=p.equipo_a_id
+    JOIN equipo eb ON eb.id_equipo=p.equipo_b_id
+    WHERE p.id_torneo=%s
+    ORDER BY p.fecha_hora_programada;
+    """, (id_torneo,))
+    partidas = cur.fetchall()
 
-@app.route("/tournaments/<int:tournament_id>")
-def tournament_detail(tournament_id):
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("""
+    SELECT e.nombre
+    FROM inscripcion i JOIN equipo e ON e.id_equipo=i.id_equipo
+    WHERE i.id_torneo=%s ORDER BY e.nombre;
+    """, (id_torneo,))
+    equipos = cur.fetchall()
 
-    cur.execute(
-        """
-        SELECT tournament_id, name, game_title, start_date, end_date, prize_pool_usd, max_teams
-        FROM tournaments
-        WHERE tournament_id = %s;
-        """,
-        (tournament_id,),
-    )
-    tournament = cur.fetchone()
-
-    cur.execute(
-        """
-        WITH team_matches AS (
-          SELECT m.tournament_id, m.team_a_id AS team_id,
-                 CASE WHEN m.score_a > m.score_b THEN 1 ELSE 0 END AS wins,
-                 CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END AS draws,
-                 CASE WHEN m.score_a < m.score_b THEN 1 ELSE 0 END AS losses
-          FROM matches m
-          WHERE m.phase = 'group_stage'
-          UNION ALL
-          SELECT m.tournament_id, m.team_b_id AS team_id,
-                 CASE WHEN m.score_b > m.score_a THEN 1 ELSE 0 END,
-                 CASE WHEN m.score_a = m.score_b THEN 1 ELSE 0 END,
-                 CASE WHEN m.score_b < m.score_a THEN 1 ELSE 0 END
-          FROM matches m
-          WHERE m.phase = 'group_stage'
-        )
-        SELECT t.name AS team_name,
-               COUNT(*) AS played,
-               SUM(tm.wins) AS wins,
-               SUM(tm.draws) AS draws,
-               SUM(tm.losses) AS losses,
-               (SUM(tm.wins) * 3 + SUM(tm.draws)) AS points
-        FROM team_matches tm
-        JOIN teams t ON t.team_id = tm.team_id
-        WHERE tm.tournament_id = %s
-        GROUP BY t.name
-        ORDER BY points DESC, wins DESC, team_name;
-        """,
-        (tournament_id,),
-    )
-    standings = cur.fetchall()
-
-    cur.execute(
-        """
-        SELECT m.match_id, m.scheduled_at, m.phase,
-               ta.name AS team_a, tb.name AS team_b,
-               m.score_a, m.score_b
-        FROM matches m
-        JOIN teams ta ON ta.team_id = m.team_a_id
-        JOIN teams tb ON tb.team_id = m.team_b_id
-        WHERE m.tournament_id = %s
-        ORDER BY m.scheduled_at;
-        """,
-        (tournament_id,),
-    )
-    matches = cur.fetchall()
-
-    cur.execute(
-        """
-        SELECT te.name
-        FROM tournament_registrations tr
-        JOIN teams te ON te.team_id = tr.team_id
-        WHERE tr.tournament_id = %s
-        ORDER BY te.name;
-        """,
-        (tournament_id,),
-    )
-    teams = cur.fetchall()
-
-    cur.execute(
-        """
-        SELECT s.name, s.industry, ts.contribution_usd
-        FROM tournament_sponsors ts
-        JOIN sponsors s ON s.sponsor_id = ts.sponsor_id
-        WHERE ts.tournament_id = %s
-        ORDER BY ts.contribution_usd DESC;
-        """,
-        (tournament_id,),
-    )
+    cur.execute("""
+    SELECT s.nombre, s.industria, st.monto_usd
+    FROM sponsor_torneo st JOIN sponsor s ON s.id_sponsor=st.id_sponsor
+    WHERE st.id_torneo=%s ORDER BY st.monto_usd DESC;
+    """, (id_torneo,))
     sponsors = cur.fetchall()
 
-    cur.close()
-    conn.close()
-
-    return render_template(
-        "tournament_detail.html",
-        tournament=tournament,
-        standings=standings,
-        matches=matches,
-        teams=teams,
-        sponsors=sponsors,
-    )
+    cur.close(); conn.close()
+    return render_template("torneo_detalle.html", torneo=torneo, tabla=tabla, partidas=partidas, equipos=equipos, sponsors=sponsors)
 
 
-@app.route("/stats")
-def stats_page():
-    selected_tournament = request.args.get("tournament_id", type=int)
-    selected_team = request.args.get("team_id", type=int)
+@app.route("/estadisticas")
+def estadisticas():
+    id_torneo = request.args.get("id_torneo", type=int)
+    id_equipo = request.args.get("id_equipo", type=int)
 
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+    torneos = cur.fetchall()
 
-    cur.execute("SELECT tournament_id, name FROM tournaments ORDER BY name;")
-    tournaments = cur.fetchall()
+    ranking, equipos, evolucion = [], [], []
+    if id_torneo:
+        cur.execute("""
+        SELECT j.id_equipo, e.nombre
+        FROM inscripcion i
+        JOIN equipo e ON e.id_equipo=i.id_equipo
+        JOIN jugador j ON j.id_equipo=e.id_equipo
+        WHERE i.id_torneo=%s
+        GROUP BY j.id_equipo, e.nombre
+        ORDER BY e.nombre;
+        """, (id_torneo,))
+        equipos = cur.fetchall()
 
-    ranking = []
-    team_stats = []
-    teams = []
-
-    if selected_tournament:
-        cur.execute(
-            """
-            SELECT p.team_id, t.name
-            FROM tournament_registrations tr
-            JOIN teams t ON t.team_id = tr.team_id
-            JOIN players p ON p.team_id = t.team_id
-            WHERE tr.tournament_id = %s
-            GROUP BY p.team_id, t.name
-            ORDER BY t.name;
-            """,
-            (selected_tournament,),
-        )
-        teams = cur.fetchall()
-
-        cur.execute(
-            """
-            SELECT p.gamertag,
-                   t.name AS team,
-                   SUM(s.kos) AS total_kos,
-                   SUM(s.restarts) AS total_restarts,
-                   SUM(s.assists) AS total_assists,
-                   ROUND(SUM(s.kos)::numeric / NULLIF(SUM(s.restarts), 0), 2) AS ko_restart_ratio,
-                   COUNT(DISTINCT s.match_id) AS matches_played
-            FROM player_match_stats s
-            JOIN players p ON p.player_id = s.player_id
-            JOIN teams t ON t.team_id = p.team_id
-            JOIN matches m ON m.match_id = s.match_id
-            WHERE m.tournament_id = %s
-            GROUP BY p.player_id, p.gamertag, t.name
-            HAVING COUNT(DISTINCT s.match_id) >= 2
-            ORDER BY ko_restart_ratio DESC NULLS LAST, total_kos DESC;
-            """,
-            (selected_tournament,),
-        )
+        cur.execute("""
+        SELECT j.gamertag, e.nombre equipo,
+               SUM(es.kos) total_kos, SUM(es.restarts) total_restarts, SUM(es.assists) total_assists,
+               ROUND(SUM(es.kos)::numeric / NULLIF(SUM(es.restarts),0), 2) ratio,
+               COUNT(DISTINCT es.id_partida) partidas
+        FROM estadistica_individual es
+        JOIN jugador j ON j.gamertag=es.gamertag
+        JOIN equipo e ON e.id_equipo=j.id_equipo
+        JOIN partida p ON p.id_partida=es.id_partida
+        WHERE p.id_torneo=%s
+        GROUP BY j.gamertag, e.nombre
+        HAVING COUNT(DISTINCT es.id_partida) >= 2
+        ORDER BY ratio DESC NULLS LAST, total_kos DESC;
+        """, (id_torneo,))
         ranking = cur.fetchall()
 
-    if selected_tournament and selected_team:
-        cur.execute(
-            """
-            SELECT phase_bucket,
-                   ROUND(AVG(kos)::numeric, 2) AS avg_kos,
-                   ROUND(AVG(restarts)::numeric, 2) AS avg_restarts,
-                   ROUND(AVG(assists)::numeric, 2) AS avg_assists
-            FROM (
-                SELECT CASE
-                         WHEN m.phase = 'group_stage' THEN 'group_stage'
-                         WHEN m.phase IN ('semifinal', 'final') THEN 'knockout'
-                         ELSE 'other'
-                       END AS phase_bucket,
-                       s.kos,
-                       s.restarts,
-                       s.assists
-                FROM player_match_stats s
-                JOIN players p ON p.player_id = s.player_id
-                JOIN matches m ON m.match_id = s.match_id
-                WHERE m.tournament_id = %s
-                  AND p.team_id = %s
-                  AND m.phase IN ('group_stage', 'semifinal', 'final')
-            ) q
-            GROUP BY phase_bucket
-            ORDER BY phase_bucket;
-            """,
-            (selected_tournament, selected_team),
-        )
-        team_stats = cur.fetchall()
+    if id_torneo and id_equipo:
+        cur.execute("""
+        SELECT bloque,
+               ROUND(AVG(kos)::numeric,2) avg_kos,
+               ROUND(AVG(restarts)::numeric,2) avg_restarts,
+               ROUND(AVG(assists)::numeric,2) avg_assists
+        FROM (
+          SELECT CASE WHEN p.fase='grupos' THEN 'grupos' WHEN p.fase IN ('semifinal','final') THEN 'eliminacion' ELSE 'otro' END bloque,
+                 es.kos, es.restarts, es.assists
+          FROM estadistica_individual es
+          JOIN jugador j ON j.gamertag=es.gamertag
+          JOIN partida p ON p.id_partida=es.id_partida
+          WHERE p.id_torneo=%s AND j.id_equipo=%s AND p.fase IN ('grupos','semifinal','final')
+        ) x
+        GROUP BY bloque ORDER BY bloque;
+        """, (id_torneo, id_equipo))
+        evolucion = cur.fetchall()
 
-    cur.close()
-    conn.close()
-
-    return render_template(
-        "stats.html",
-        tournaments=tournaments,
-        teams=teams,
-        ranking=ranking,
-        team_stats=team_stats,
-        selected_tournament=selected_tournament,
-        selected_team=selected_team,
-    )
+    cur.close(); conn.close()
+    return render_template("estadisticas.html", torneos=torneos, equipos=equipos, ranking=ranking, evolucion=evolucion, id_torneo=id_torneo, id_equipo=id_equipo)
 
 
-@app.route("/search")
-def search_page():
-    player_q = request.args.get("player_q", "").strip()
-    country_q = request.args.get("country_q", "").strip()
-    team_q = request.args.get("team_q", "").strip()
+@app.route("/busqueda")
+def busqueda():
+    gamertag = request.args.get("gamertag", "").strip()
+    pais = request.args.get("pais", "").strip()
+    equipo = request.args.get("equipo", "").strip()
 
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    jugadores, equipos = [], []
 
-    players = []
-    teams = []
+    if gamertag or pais:
+        cur.execute("""
+        SELECT j.gamertag, j.nombre_real, j.pais_origen, e.nombre equipo
+        FROM jugador j JOIN equipo e ON e.id_equipo=j.id_equipo
+        WHERE (%s='' OR j.gamertag ILIKE '%%'||%s||'%%')
+          AND (%s='' OR j.pais_origen ILIKE '%%'||%s||'%%')
+        ORDER BY j.gamertag;
+        """, (gamertag, gamertag, pais, pais))
+        jugadores = cur.fetchall()
 
-    if player_q or country_q:
-        cur.execute(
-            """
-            SELECT p.gamertag, p.real_name, p.country, t.name AS team_name
-            FROM players p
-            JOIN teams t ON t.team_id = p.team_id
-            WHERE (%s = '' OR p.gamertag ILIKE '%%' || %s || '%%')
-              AND (%s = '' OR p.country ILIKE '%%' || %s || '%%')
-            ORDER BY p.gamertag;
-            """,
-            (player_q, player_q, country_q, country_q),
-        )
-        players = cur.fetchall()
+    if equipo:
+        cur.execute("""
+        SELECT e.nombre, e.fecha_creacion, e.capitan_gamertag, COUNT(j.gamertag) cantidad_jugadores
+        FROM equipo e LEFT JOIN jugador j ON j.id_equipo=e.id_equipo
+        WHERE e.nombre ILIKE '%%'||%s||'%%'
+        GROUP BY e.id_equipo
+        ORDER BY e.nombre;
+        """, (equipo,))
+        equipos = cur.fetchall()
 
-    if team_q:
-        cur.execute(
-            """
-            SELECT t.name,
-                   t.created_at,
-                   cp.gamertag AS captain,
-                   COUNT(p.player_id) AS roster_size
-            FROM teams t
-            LEFT JOIN players cp ON cp.player_id = t.captain_player_id
-            LEFT JOIN players p ON p.team_id = t.team_id
-            WHERE t.name ILIKE '%%' || %s || '%%'
-            GROUP BY t.team_id, cp.gamertag
-            ORDER BY t.name;
-            """,
-            (team_q,),
-        )
-        teams = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return render_template(
-        "search.html",
-        players=players,
-        teams=teams,
-        player_q=player_q,
-        country_q=country_q,
-        team_q=team_q,
-    )
+    cur.close(); conn.close()
+    return render_template("busqueda.html", jugadores=jugadores, equipos=equipos, gamertag=gamertag, pais=pais, equipo=equipo)
 
 
-@app.route("/sponsors")
-def sponsors_page():
-    selected_game = request.args.get("game_title", "").strip()
+@app.route('/sponsors')
+def sponsors():
+    videojuego = request.args.get('videojuego', '').strip()
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    cur.execute("SELECT DISTINCT videojuego FROM torneo ORDER BY videojuego;")
+    juegos = cur.fetchall()
+    rows = []
 
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-
-    cur.execute("SELECT DISTINCT game_title FROM tournaments ORDER BY game_title;")
-    games = cur.fetchall()
-
-    sponsors = []
-    if selected_game:
-        cur.execute(
-            """
-            SELECT s.name, s.industry, SUM(ts.contribution_usd) AS total_contribution_usd
-            FROM sponsors s
-            JOIN tournament_sponsors ts ON ts.sponsor_id = s.sponsor_id
-            JOIN tournaments t ON t.tournament_id = ts.tournament_id
-            WHERE t.game_title = %s
+    if videojuego:
+        cur.execute("""
+        SELECT s.nombre, s.industria, SUM(st.monto_usd) total_aporte
+        FROM sponsor s
+        JOIN sponsor_torneo st ON st.id_sponsor=s.id_sponsor
+        JOIN torneo t ON t.id_torneo=st.id_torneo
+        WHERE t.videojuego=%s
+          AND NOT EXISTS (
+            SELECT 1 FROM torneo tx
+            WHERE tx.videojuego=%s
               AND NOT EXISTS (
-                SELECT 1
-                FROM tournaments tx
-                WHERE tx.game_title = %s
-                  AND NOT EXISTS (
-                    SELECT 1
-                    FROM tournament_sponsors tsx
-                    WHERE tsx.tournament_id = tx.tournament_id
-                      AND tsx.sponsor_id = s.sponsor_id
-                  )
+                SELECT 1 FROM sponsor_torneo stx
+                WHERE stx.id_torneo=tx.id_torneo AND stx.id_sponsor=s.id_sponsor
               )
-            GROUP BY s.sponsor_id, s.name, s.industry
-            ORDER BY total_contribution_usd DESC;
-            """,
-            (selected_game, selected_game),
-        )
-        sponsors = cur.fetchall()
+          )
+        GROUP BY s.id_sponsor, s.nombre, s.industria
+        ORDER BY total_aporte DESC;
+        """, (videojuego, videojuego))
+        rows = cur.fetchall()
 
-    cur.close()
-    conn.close()
-
-    return render_template(
-        "sponsors.html",
-        games=games,
-        selected_game=selected_game,
-        sponsors=sponsors,
-    )
+    cur.close(); conn.close()
+    return render_template('sponsors.html', juegos=juegos, rows=rows, videojuego=videojuego)
 
 
-@app.route("/register", methods=["GET", "POST"])
-def register_team():
-    conn = get_db_connection()
-    cur = conn.cursor(cursor_factory=RealDictCursor)
-
-    if request.method == "POST":
-        tournament_id = request.form.get("tournament_id", type=int)
-        team_id = request.form.get("team_id", type=int)
+@app.route('/inscripcion', methods=['GET','POST'])
+def inscripcion():
+    conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    if request.method == 'POST':
+        id_torneo = request.form.get('id_torneo', type=int)
+        id_equipo = request.form.get('id_equipo', type=int)
+        grupo = request.form.get('grupo') or None
         try:
-            cur.execute(
-                "INSERT INTO tournament_registrations (tournament_id, team_id) VALUES (%s, %s);",
-                (tournament_id, team_id),
-            )
+            cur.execute("INSERT INTO inscripcion (id_torneo, id_equipo, grupo) VALUES (%s,%s,%s)", (id_torneo, id_equipo, grupo))
             conn.commit()
-            flash("Equipo inscrito correctamente.", "success")
-            return redirect(url_for("register_team"))
+            flash('Inscripción realizada', 'ok')
+            return redirect(url_for('inscripcion'))
         except Exception as e:
             conn.rollback()
-            flash(f"No se pudo inscribir el equipo: {str(e)}", "error")
+            flash(f'Error al inscribir: {e}', 'err')
 
-    cur.execute("SELECT tournament_id, name FROM tournaments ORDER BY name;")
-    tournaments = cur.fetchall()
-    cur.execute("SELECT team_id, name FROM teams ORDER BY name;")
-    teams = cur.fetchall()
-
-    cur.close()
-    conn.close()
-
-    return render_template("register.html", tournaments=tournaments, teams=teams)
+    cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+    torneos = cur.fetchall()
+    cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+    equipos = cur.fetchall()
+    cur.close(); conn.close()
+    return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
 
 
-if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=5000, debug=True)
+if __name__ == '__main__':
+    app.run(debug=True)
