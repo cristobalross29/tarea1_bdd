@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Estadísticas por torneo</h2>
+<form method="get">
+  <label>Torneo:</label>
+  <select name="tournament_id">
+    <option value="">-- seleccionar --</option>
+    {% for t in tournaments %}
+      <option value="{{ t.tournament_id }}" {% if selected_tournament == t.tournament_id %}selected{% endif %}>{{ t.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Ver</button>
+</form>
+
+{% if ranking %}
+<h3>Ranking jugadores (KOs/restarts, min 2 partidas)</h3>
+<table>
+  <tr><th>Gamertag</th><th>Equipo</th><th>KOs</th><th>Restarts</th><th>Assists</th><th>Ratio</th><th>Partidas</th></tr>
+  {% for r in ranking %}
+  <tr><td>{{ r.gamertag }}</td><td>{{ r.team }}</td><td>{{ r.total_kos }}</td><td>{{ r.total_restarts }}</td><td>{{ r.total_assists }}</td><td>{{ r.ko_restart_ratio }}</td><td>{{ r.matches_played }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+{% if selected_tournament %}
+<h3>Evolución por fase (equipo)</h3>
+<form method="get">
+  <input type="hidden" name="tournament_id" value="{{ selected_tournament }}" />
+  <label>Equipo:</label>
+  <select name="team_id">
+    <option value="">-- seleccionar --</option>
+    {% for tm in teams %}
+      <option value="{{ tm.team_id }}" {% if selected_team == tm.team_id %}selected{% endif %}>{{ tm.name }}</option>
+    {% endfor %}
+  </select>
+  <button type="submit">Comparar</button>
+</form>
+{% endif %}
+
+{% if team_stats %}
+<table>
+  <tr><th>Fase</th><th>Avg KOs</th><th>Avg Restarts</th><th>Avg Assists</th></tr>
+  {% for s in team_stats %}
+  <tr><td>{{ s.phase_bucket }}</td><td>{{ s.avg_kos }}</td><td>{{ s.avg_restarts }}</td><td>{{ s.avg_assists }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Formulario de inscripción</h2>
+<form method="post">
+  <label>Torneo:</label>
+  <select name="tournament_id" required>
+    {% for t in tournaments %}
+    <option value="{{ t.tournament_id }}">{{ t.name }}</option>
+    {% endfor %}
+  </select>
+
+  <label>Equipo:</label>
+  <select name="team_id" required>
+    {% for team in teams %}
+    <option value="{{ team.team_id }}">{{ team.name }}</option>
+    {% endfor %}
+  </select>
+
+  <button type="submit">Inscribir</button>
+</form>
+{% endblock %}

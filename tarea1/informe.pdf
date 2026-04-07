@@ -1,0 +1,80 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [ 3 0 R ] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 2493 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+12 TL
+(Informe Parte A) Tj
+T* () Tj
+T* (# Informe - Parte A) Tj
+T* () Tj
+T* (## 1\) Prompt usado con LLM) Tj
+T* () Tj
+T* (> Diseña un esquema relacional completo para los siguientes requerimientos \(copiados textual del enunciado\):) Tj
+T* (> [sección 3 completa de requerimientos del cliente, sin cambios].) Tj
+T* (>) Tj
+T* (> Incluye: tablas, atributos, tipos, PK/FK, restricciones y decisiones de diseño.) Tj
+T* () Tj
+T* (## 2\) Respuesta resumida del LLM) Tj
+T* (El LLM propuso tablas para torneos, equipos, jugadores, matches, sponsors y estadísticas. Incluyó claves primarias y varias foráneas.) Tj
+T* () Tj
+T* (## 3\) Análisis crítico) Tj
+T* () Tj
+T* (### Aciertos del esquema LLM) Tj
+T* (- Separó entidades principales \(torneos, equipos, jugadores, matches, sponsors\).) Tj
+T* (- Modeló relaciones N:M \(equipos-torneos y sponsors-torneos\).) Tj
+T* (- Incluyó una tabla de estadísticas por jugador y partida.) Tj
+T* () Tj
+T* (### Errores / omisiones detectadas) Tj
+T* (1. **Capitán miembro del equipo**) Tj
+T* (   - El esquema LLM no aseguraba completamente esta restricción.) Tj
+T* (   - Solución implementada: trigger `validate_team_captain_membership`.) Tj
+T* () Tj
+T* (2. **Cupo máximo de torneo**) Tj
+T* (   - El LLM sugería validarlo en aplicación.) Tj
+T* (   - En esta entrega se valida en BD con trigger `enforce_tournament_capacity` para asegurar integridad incluso si cambia la app.) Tj
+T* () Tj
+T* (3. **Consistencia de stats por match**) Tj
+T* (   - Faltaba asegurar que el jugador de `player_match_stats` pertenezca a uno de los dos equipos del match.) Tj
+T* (   - Se implementó trigger `validate_player_stats_membership`.) Tj
+T* () Tj
+T* (4. **Equipos de la partida inscritos al torneo**) Tj
+T* (   - Se agregó trigger `validate_match_teams_registered`.) Tj
+T* () Tj
+T* (### Decisiones de diseño discutibles) Tj
+T* (- Tipo de fase: `ENUM` vs tabla catálogo. Se eligió `ENUM` por simplicidad y validez en PostgreSQL.) Tj
+T* (- Jugador en exactamente un equipo: se modeló con `players.team_id NOT NULL`.) Tj
+T* (- Se definió `email` único para evitar duplicidad y facilitar búsqueda.) Tj
+T* () Tj
+T* (## 4\) Justificación del esquema final) Tj
+T* (El esquema final captura correctamente entidades y relaciones, y agrega validaciones de negocio que no se pueden expresar solo con PK/FK/CHECK. Esto alinea el diseño conceptual con la implementación real y evita inconsistencias durante inserciones/actualizaciones.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000117 00000 n 
+0000000243 00000 n 
+0000002788 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2858
+%%EOF

@@ -1,0 +1,35 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>Búsqueda</h2>
+<form method="get">
+  <label>Gamertag:</label>
+  <input type="text" name="player_q" value="{{ player_q }}" />
+  <label>País:</label>
+  <input type="text" name="country_q" value="{{ country_q }}" />
+  <button type="submit">Buscar jugadores</button>
+</form>
+
+{% if players %}
+<table>
+  <tr><th>Gamertag</th><th>Nombre real</th><th>País</th><th>Equipo</th></tr>
+  {% for p in players %}
+  <tr><td>{{ p.gamertag }}</td><td>{{ p.real_name }}</td><td>{{ p.country }}</td><td>{{ p.team_name }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+
+<form method="get">
+  <label>Nombre equipo:</label>
+  <input type="text" name="team_q" value="{{ team_q }}" />
+  <button type="submit">Buscar equipos</button>
+</form>
+
+{% if teams %}
+<table>
+  <tr><th>Equipo</th><th>Creado</th><th>Capitán</th><th>Tamaño roster</th></tr>
+  {% for t in teams %}
+  <tr><td>{{ t.name }}</td><td>{{ t.created_at }}</td><td>{{ t.captain }}</td><td>{{ t.roster_size }}</td></tr>
+  {% endfor %}
+</table>
+{% endif %}
+{% endblock %}

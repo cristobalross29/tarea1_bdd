@@ -1,0 +1,41 @@
+{% extends 'base.html' %}
+{% block content %}
+<h2>{{ tournament.name }} ({{ tournament.game_title }})</h2>
+
+<h3>Tabla de posiciones (fase de grupos)</h3>
+<table>
+  <tr><th>Equipo</th><th>PJ</th><th>G</th><th>E</th><th>P</th><th>Puntos</th></tr>
+  {% for s in standings %}
+  <tr>
+    <td>{{ s.team_name }}</td><td>{{ s.played }}</td><td>{{ s.wins }}</td><td>{{ s.draws }}</td><td>{{ s.losses }}</td><td>{{ s.points }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Partidas</h3>
+<table>
+  <tr><th>Fecha</th><th>Fase</th><th>Equipo A</th><th>Resultado</th><th>Equipo B</th></tr>
+  {% for m in matches %}
+  <tr>
+    <td>{{ m.scheduled_at }}</td>
+    <td>{{ m.phase }}</td>
+    <td>{{ m.team_a }}</td>
+    <td>{{ m.score_a }} - {{ m.score_b }}</td>
+    <td>{{ m.team_b }}</td>
+  </tr>
+  {% endfor %}
+</table>
+
+<h3>Equipos inscritos</h3>
+<ul>
+  {% for t in teams %}<li>{{ t.name }}</li>{% endfor %}
+</ul>
+
+<h3>Sponsors</h3>
+<table>
+  <tr><th>Nombre</th><th>Industria</th><th>Aporte USD</th></tr>
+  {% for s in sponsors %}
+  <tr><td>{{ s.name }}</td><td>{{ s.industry }}</td><td>{{ s.contribution_usd }}</td></tr>
+  {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,68 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Count 1 /Kids [ 3 0 R ] >>
+endobj
+3 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 5 0 R >> >> /Contents 4 0 R >>
+endobj
+4 0 obj
+<< /Length 1788 >>
+stream
+BT
+/F1 10 Tf
+50 780 Td
+12 TL
+(LLM Log) Tj
+T* () Tj
+T* (# LLM Log \(máx. 2 páginas\)) Tj
+T* () Tj
+T* (## Herramientas LLM utilizadas) Tj
+T* (- ChatGPT \(apoyo en diseño SQL, validaciones y estructura de app\)) Tj
+T* () Tj
+T* (## Uso por parte de la tarea) Tj
+T* (1. **Parte A**) Tj
+T* (   - Generación inicial de esquema candidato.) Tj
+T* (   - Apoyo para identificar restricciones difíciles \(capitán miembro, cupos, división relacional\).) Tj
+T* () Tj
+T* (2. **Parte B**) Tj
+T* (   - Apoyo en redacción de triggers y diseño de datos sintéticos.) Tj
+T* (   - Verificación de edge cases \(`NULLIF` para evitar división por cero\).) Tj
+T* () Tj
+T* (3. **Parte C**) Tj
+T* (   - Apoyo para formular consultas SQL explícitas por cada página.) Tj
+T* (   - Revisión de consultas para sponsors que auspician todos los torneos de un juego.) Tj
+T* () Tj
+T* (## Prompts útiles) Tj
+T* (- "Propón un esquema PostgreSQL para torneo esports incluyendo constraints y triggers para reglas de negocio".) Tj
+T* (- "Escribe consulta SQL para sponsors que auspiciaron todos los torneos de un juego".) Tj
+T* (- "Consulta para ranking de KOs/restarts con mínimo de partidas y evitando división por cero".) Tj
+T* () Tj
+T* (## Errores/no-utilidad del LLM detectados) Tj
+T* (- En iteraciones iniciales omitió validación de cupo en nivel BD.) Tj
+T* (- Sugirió una versión de query de sponsors con `HAVING COUNT\(*\)`, correcta solo bajo supuestos más estrictos.) Tj
+T* (- No siempre consideró consistencia entre stats y equipos participantes del match.) Tj
+T* () Tj
+T* (## Conclusión) Tj
+T* (El LLM aceleró el desarrollo, pero fue necesario corregir y validar manualmente restricciones y consultas para asegurar cumplimiento completo del enunciado y preparación para defensa oral.) Tj
+ET
+endstream
+endobj
+5 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+xref
+0 6
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000117 00000 n 
+0000000243 00000 n 
+0000002083 00000 n 
+trailer
+<< /Size 6 /Root 1 0 R >>
+startxref
+2153
+%%EOF
