@@ -23,3 +23,7 @@
 ## Entrada 06
 - Error encontrado: Los datos iniciales dejaban todos los torneos completos y no permitían demostrar una inscripción exitosa con seeds limpios.
 - Cómo se solucionó: Se liberó un cupo en un torneo secundario de `data.sql` manteniendo el torneo principal 8/8 y el caso de torneo lleno.
+
+## Entrada 07
+- Error encontrado: No existía una validación automática mínima de rutas y flujo de inscripción (éxito, duplicado y torneo lleno).
+- Cómo se solucionó: Se agregó un smoke test con `Flask test_client` y chequeos SQL para verificar comportamiento end-to-end.
