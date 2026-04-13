@@ -269,6 +269,22 @@ def inscripcion():
             equipos = cur.fetchall()
             cur.close(); conn.close()
             return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+        cur.execute("""
+            SELECT t.max_equipos, COUNT(i.id_equipo) inscritos
+            FROM torneo t
+            LEFT JOIN inscripcion i ON i.id_torneo=t.id_torneo
+            WHERE t.id_torneo=%s
+            GROUP BY t.max_equipos
+        """, (id_torneo,))
+        cupo = cur.fetchone()
+        if cupo and cupo["inscritos"] >= cupo["max_equipos"]:
+            flash('No se pudo inscribir: el torneo ya alcanzó su número máximo de equipos', 'err')
+            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+            torneos = cur.fetchall()
+            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+            equipos = cur.fetchall()
+            cur.close(); conn.close()
+            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
         try:
             cur.execute("INSERT INTO inscripcion (id_torneo, id_equipo, grupo) VALUES (%s,%s,%s)", (id_torneo, id_equipo, grupo))
             conn.commit()

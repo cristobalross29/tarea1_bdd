@@ -11,3 +11,7 @@
 ## Entrada 03
 - Error encontrado: La inscripción duplicada dependía de capturar excepción SQL y podía entregar feedback inconsistente.
 - Cómo se solucionó: Se agregó pre-chequeo de duplicado en aplicación para responder con mensaje específico antes del INSERT.
+
+## Entrada 04
+- Error encontrado: El rechazo por torneo lleno dependía solo del trigger y no siempre entregaba feedback temprano en la app.
+- Cómo se solucionó: Se añadió pre-chequeo de cupo en la ruta de inscripción y se mantuvo el trigger como respaldo de integridad.
