@@ -1,9 +1,9 @@
 # Tarea 1 - IIC2413
 
 ## Integrantes
-- Integrante 1 - RUT
-- Integrante 2 - RUT
-- Integrante 3 - RUT
+- Gonzalo Molina - 21528001-2
+- Iñaki Guridi - 21949205-7
+- Cristobal Ross - 21942701-8
 
 ## Stack y gestor de paquetes
 - Backend: Python + Flask

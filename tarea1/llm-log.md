@@ -35,3 +35,7 @@
 ## Entrada 09
 - Error encontrado: El README no dejaba una validación mínima automatizada ni una guía de ejecución suficientemente precisa para reproducir el flujo completo.
 - Cómo se solucionó: Se actualizó README con stack, variables, 5 comandos de arranque y ejecución del smoke test de verificación.
+
+## Entrada 10
+- Error encontrado: El README tenía placeholders en la sección de integrantes y no cumplía el formato final de entrega.
+- Cómo se solucionó: Se reemplazaron los placeholders por los nombres y RUT reales de los tres integrantes.
