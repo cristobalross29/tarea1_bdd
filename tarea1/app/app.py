@@ -153,14 +153,17 @@ def estadisticas():
                ROUND(AVG(restarts)::numeric,2) avg_restarts,
                ROUND(AVG(assists)::numeric,2) avg_assists
         FROM (
-          SELECT CASE WHEN p.fase='grupos' THEN 'grupos' WHEN p.fase IN ('cuartos_final','semifinal','final') THEN 'eliminacion' ELSE 'otro' END bloque,
+          SELECT CASE
+                   WHEN p.fase='grupos' THEN 'grupos'
+                   WHEN p.fase IN ('semifinal','final') THEN 'eliminacion (semifinal+final)'
+                 END bloque,
                  es.kos, es.restarts, es.assists
           FROM estadistica_individual es
           JOIN jugador j ON j.gamertag=es.gamertag
           JOIN partida p ON p.id_partida=es.id_partida
-          WHERE p.id_torneo=%s AND j.id_equipo=%s AND p.fase IN ('grupos','cuartos_final','semifinal','final')
+          WHERE p.id_torneo=%s AND j.id_equipo=%s AND p.fase IN ('grupos','semifinal','final')
         ) x
-        GROUP BY bloque ORDER BY bloque;
+        GROUP BY bloque ORDER BY CASE WHEN bloque='grupos' THEN 1 ELSE 2 END;
         """, (id_torneo, id_equipo))
         evolucion = cur.fetchall()
 

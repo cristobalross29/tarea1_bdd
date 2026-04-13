@@ -27,3 +27,7 @@
 ## Entrada 07
 - Error encontrado: No existía una validación automática mínima de rutas y flujo de inscripción (éxito, duplicado y torneo lleno).
 - Cómo se solucionó: Se agregó un smoke test con `Flask test_client` y chequeos SQL para verificar comportamiento end-to-end.
+
+## Entrada 08
+- Error encontrado: La evolución por fase mezclaba cuartos de final con semifinal/final en la comparación pedida por el enunciado.
+- Cómo se solucionó: Se ajustó la consulta para comparar explícitamente `grupos` vs `eliminacion (semifinal+final)` sin eliminar `cuartos_final` del esquema.
