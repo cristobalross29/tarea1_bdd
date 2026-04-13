@@ -19,3 +19,7 @@
 ## Entrada 05
 - Error encontrado: El formulario de inscripción no mostraba cupos por torneo y perdía la selección del usuario al fallar una validación.
 - Cómo se solucionó: Se actualizó la vista para mostrar inscritos/max y se preservaron torneo, equipo y grupo en re-render de errores.
+
+## Entrada 06
+- Error encontrado: Los datos iniciales dejaban todos los torneos completos y no permitían demostrar una inscripción exitosa con seeds limpios.
+- Cómo se solucionó: Se liberó un cupo en un torneo secundario de `data.sql` manteniendo el torneo principal 8/8 y el caso de torneo lleno.

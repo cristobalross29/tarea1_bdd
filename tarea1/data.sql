@@ -34,7 +34,7 @@ SET capitan_gamertag = format('t%sp1', e.id_equipo);
 INSERT INTO INSCRIPCION (id_torneo, id_equipo, grupo) VALUES
 (1,1,'A'),(1,2,'A'),(1,3,'A'),(1,4,'A'),(1,5,'B'),(1,6,'B'),(1,7,'B'),(1,8,'B'),
 (2,1,NULL),(2,2,NULL),(2,3,NULL),(2,4,NULL),(2,5,NULL),(2,6,NULL),(2,7,NULL),(2,8,NULL),(2,9,NULL),(2,10,NULL),
-(3,1,NULL),(3,3,NULL),(3,5,NULL),(3,7,NULL),(3,9,NULL),(3,10,NULL);
+(3,1,NULL),(3,3,NULL),(3,5,NULL),(3,7,NULL),(3,9,NULL);
 
 INSERT INTO SPONSOR (nombre, industria) VALUES
 ('HyperTech','tecnologia'),('PowerDrink','bebidas'),('NeoWear','ropa'),('CloudNet','tecnologia'),('ArenaBank','finanzas');
