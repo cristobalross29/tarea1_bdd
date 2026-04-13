@@ -1,13 +1,5 @@
 # LLM Log
 
-- Se utilizó LLM para acelerar redacción de SQL y estructura web.
-- Se validó manualmente cada decisión y se corrigieron omisiones.
-
-## Dónde ayudó
-- Diseño de triggers de integridad.
-- Consultas SQL complejas (tabla de posiciones y sponsors de todos los torneos).
-- Estructura mínima de app Flask sin ORM.
-
-## Errores detectados del LLM
-- Omitía validaciones de negocio en BD.
-- Proponía soluciones en frontend sin garantizar integridad transaccional.
+## Entrada 01
+- Error encontrado: El LLM log estaba en formato extenso con secciones no solicitadas.
+- Cómo se solucionó: Se reemplazó por un formato breve con entradas que solo incluyen error encontrado y solución aplicada.
