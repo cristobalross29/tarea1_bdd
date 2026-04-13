@@ -31,3 +31,7 @@
 ## Entrada 08
 - Error encontrado: La evolución por fase mezclaba cuartos de final con semifinal/final en la comparación pedida por el enunciado.
 - Cómo se solucionó: Se ajustó la consulta para comparar explícitamente `grupos` vs `eliminacion (semifinal+final)` sin eliminar `cuartos_final` del esquema.
+
+## Entrada 09
+- Error encontrado: El README no dejaba una validación mínima automatizada ni una guía de ejecución suficientemente precisa para reproducir el flujo completo.
+- Cómo se solucionó: Se actualizó README con stack, variables, 5 comandos de arranque y ejecución del smoke test de verificación.
