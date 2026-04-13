@@ -57,7 +57,7 @@ CREATE TABLE PARTIDA (
   id_partida BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   id_torneo BIGINT NOT NULL REFERENCES TORNEO(id_torneo) ON DELETE CASCADE,
   fecha_hora_programada TIMESTAMP NOT NULL,
-  fase VARCHAR(20) NOT NULL CHECK (fase IN ('grupos', 'cuartos', 'semifinal', 'final')),
+  fase VARCHAR(20) NOT NULL CHECK (fase IN ('grupos', 'cuartos_final', 'semifinal', 'final')),
   equipo_a_id BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT,
   equipo_b_id BIGINT NOT NULL REFERENCES EQUIPO(id_equipo) ON DELETE RESTRICT,
   puntaje_equipo_a INT NOT NULL CHECK (puntaje_equipo_a >= 0),
@@ -117,6 +117,46 @@ $$ LANGUAGE plpgsql;
 CREATE TRIGGER trg_capitan_en_su_equipo
 BEFORE INSERT OR UPDATE OF capitan_gamertag ON EQUIPO
 FOR EACH ROW EXECUTE FUNCTION fn_capitan_en_su_equipo();
+
+-- Regla: cada equipo debe quedar con capitán al confirmar transacción
+CREATE OR REPLACE FUNCTION fn_equipo_capitan_obligatorio()
+RETURNS TRIGGER AS $$
+DECLARE
+  capitan_actual VARCHAR(50);
+BEGIN
+  SELECT capitan_gamertag
+    INTO capitan_actual
+  FROM EQUIPO
+  WHERE id_equipo = NEW.id_equipo;
+
+  IF capitan_actual IS NULL THEN
+    RAISE EXCEPTION 'El equipo % debe tener capitán', NEW.id_equipo;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE CONSTRAINT TRIGGER trg_equipo_capitan_obligatorio
+AFTER INSERT OR UPDATE OF capitan_gamertag ON EQUIPO
+DEFERRABLE INITIALLY DEFERRED
+FOR EACH ROW EXECUTE FUNCTION fn_equipo_capitan_obligatorio();
+
+-- Regla: membresía fija (un jugador no cambia de equipo)
+CREATE OR REPLACE FUNCTION fn_jugador_equipo_inmutable()
+RETURNS TRIGGER AS $$
+BEGIN
+  IF NEW.id_equipo IS DISTINCT FROM OLD.id_equipo THEN
+    RAISE EXCEPTION 'El jugador % no puede cambiar de equipo (% -> %)', OLD.gamertag, OLD.id_equipo, NEW.id_equipo;
+  END IF;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+CREATE TRIGGER trg_jugador_equipo_inmutable
+BEFORE UPDATE OF id_equipo ON JUGADOR
+FOR EACH ROW EXECUTE FUNCTION fn_jugador_equipo_inmutable();
 
 -- Regla: no superar cupo de torneo
 CREATE OR REPLACE FUNCTION fn_validar_cupo_torneo()
