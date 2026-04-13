@@ -48,27 +48,35 @@ def torneo_detalle(id_torneo):
     conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
 
     cur.execute("SELECT * FROM torneo WHERE id_torneo=%s", (id_torneo,)); torneo = cur.fetchone()
+    if torneo is None:
+        cur.close(); conn.close()
+        flash("Torneo no encontrado", "err")
+        return redirect(url_for("torneos"))
 
     cur.execute("""
     WITH juegos AS (
-      SELECT p.id_torneo, p.equipo_a_id id_equipo,
+      SELECT p.id_torneo, i.grupo, p.equipo_a_id id_equipo,
              CASE WHEN p.puntaje_equipo_a > p.puntaje_equipo_b THEN 1 ELSE 0 END g,
              CASE WHEN p.puntaje_equipo_a = p.puntaje_equipo_b THEN 1 ELSE 0 END e,
              CASE WHEN p.puntaje_equipo_a < p.puntaje_equipo_b THEN 1 ELSE 0 END d
-      FROM partida p WHERE p.fase='grupos'
+      FROM partida p
+      JOIN inscripcion i ON i.id_torneo = p.id_torneo AND i.id_equipo = p.equipo_a_id
+      WHERE p.fase='grupos'
       UNION ALL
-      SELECT p.id_torneo, p.equipo_b_id,
+      SELECT p.id_torneo, i.grupo, p.equipo_b_id,
              CASE WHEN p.puntaje_equipo_b > p.puntaje_equipo_a THEN 1 ELSE 0 END,
              CASE WHEN p.puntaje_equipo_a = p.puntaje_equipo_b THEN 1 ELSE 0 END,
              CASE WHEN p.puntaje_equipo_b < p.puntaje_equipo_a THEN 1 ELSE 0 END
-      FROM partida p WHERE p.fase='grupos'
+      FROM partida p
+      JOIN inscripcion i ON i.id_torneo = p.id_torneo AND i.id_equipo = p.equipo_b_id
+      WHERE p.fase='grupos'
     )
-    SELECT e.nombre equipo, COUNT(*) pj, SUM(g) ganadas, SUM(e) empatadas, SUM(d) perdidas,
+    SELECT j.grupo, e.nombre equipo, COUNT(*) pj, SUM(g) ganadas, SUM(e) empatadas, SUM(d) perdidas,
            SUM(g)*3 + SUM(e) puntos
     FROM juegos j JOIN equipo e ON e.id_equipo=j.id_equipo
     WHERE j.id_torneo=%s
-    GROUP BY e.nombre
-    ORDER BY puntos DESC, ganadas DESC, equipo;
+    GROUP BY j.grupo, e.nombre
+    ORDER BY j.grupo NULLS LAST, puntos DESC, ganadas DESC, equipo;
     """, (id_torneo,))
     tabla = cur.fetchall()
 
@@ -145,12 +153,12 @@ def estadisticas():
                ROUND(AVG(restarts)::numeric,2) avg_restarts,
                ROUND(AVG(assists)::numeric,2) avg_assists
         FROM (
-          SELECT CASE WHEN p.fase='grupos' THEN 'grupos' WHEN p.fase IN ('semifinal','final') THEN 'eliminacion' ELSE 'otro' END bloque,
+          SELECT CASE WHEN p.fase='grupos' THEN 'grupos' WHEN p.fase IN ('cuartos_final','semifinal','final') THEN 'eliminacion' ELSE 'otro' END bloque,
                  es.kos, es.restarts, es.assists
           FROM estadistica_individual es
           JOIN jugador j ON j.gamertag=es.gamertag
           JOIN partida p ON p.id_partida=es.id_partida
-          WHERE p.id_torneo=%s AND j.id_equipo=%s AND p.fase IN ('grupos','semifinal','final')
+          WHERE p.id_torneo=%s AND j.id_equipo=%s AND p.fase IN ('grupos','cuartos_final','semifinal','final')
         ) x
         GROUP BY bloque ORDER BY bloque;
         """, (id_torneo, id_equipo))
@@ -231,15 +239,39 @@ def inscripcion():
     if request.method == 'POST':
         id_torneo = request.form.get('id_torneo', type=int)
         id_equipo = request.form.get('id_equipo', type=int)
-        grupo = request.form.get('grupo') or None
+        grupo_raw = (request.form.get('grupo') or '').strip().upper()
+        grupo = grupo_raw or None
+        if not id_torneo or not id_equipo:
+            flash("Debe seleccionar torneo y equipo", "err")
+            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+            torneos = cur.fetchall()
+            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+            equipos = cur.fetchall()
+            cur.close(); conn.close()
+            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+        if grupo not in (None, 'A', 'B'):
+            flash("Grupo inválido: use A, B o vacío", "err")
+            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+            torneos = cur.fetchall()
+            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+            equipos = cur.fetchall()
+            cur.close(); conn.close()
+            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
         try:
             cur.execute("INSERT INTO inscripcion (id_torneo, id_equipo, grupo) VALUES (%s,%s,%s)", (id_torneo, id_equipo, grupo))
             conn.commit()
             flash('Inscripción realizada', 'ok')
             return redirect(url_for('inscripcion'))
-        except Exception as e:
+        except psycopg2.Error as e:
             conn.rollback()
-            flash(f'Error al inscribir: {e}', 'err')
+            msg = (e.diag.message_primary or str(e)).strip()
+            msg_lower = msg.lower()
+            if 'lleno' in msg_lower or 'cupo máximo' in msg_lower or 'cupo maximo' in msg_lower:
+                flash('No se pudo inscribir: el torneo ya alcanzó su número máximo de equipos', 'err')
+            elif 'duplicate key value' in msg_lower:
+                flash('No se pudo inscribir: el equipo ya está inscrito en ese torneo', 'err')
+            else:
+                flash(f'Error al inscribir: {msg}', 'err')
 
     cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
     torneos = cur.fetchall()
