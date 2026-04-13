@@ -7,14 +7,27 @@ app = Flask(__name__)
 app.secret_key = "t1-bdd"
 
 
+def _db_kwargs(user=None, password=None):
+    return {
+        "host": os.getenv("DB_HOST", "localhost"),
+        "port": os.getenv("DB_PORT", "5432"),
+        "user": user if user is not None else os.getenv("DB_USER", "postgres"),
+        "password": password if password is not None else os.getenv("DB_PASSWORD", "postgres"),
+        "dbname": os.getenv("DB_NAME", "tarea1"),
+    }
+
+
 def db_conn():
-    return psycopg2.connect(
-        host=os.getenv("DB_HOST", "localhost"),
-        port=os.getenv("DB_PORT", "5432"),
-        user=os.getenv("DB_USER", "postgres"),
-        password=os.getenv("DB_PASSWORD", "postgres"),
-        dbname=os.getenv("DB_NAME", "tarea1"),
-    )
+    try:
+        return psycopg2.connect(**_db_kwargs())
+    except psycopg2.OperationalError as e:
+        # Keep enunciado defaults, but allow local Postgres installs without 'postgres' role.
+        if os.getenv("DB_USER") is None and 'role "postgres" does not exist' in str(e).lower():
+            fallback_user = os.getenv("USER") or os.getenv("USERNAME")
+            fallback_password = os.getenv("DB_PASSWORD") if os.getenv("DB_PASSWORD") is not None else ""
+            if fallback_user:
+                return psycopg2.connect(**_db_kwargs(user=fallback_user, password=fallback_password))
+        raise
 
 
 @app.route("/")

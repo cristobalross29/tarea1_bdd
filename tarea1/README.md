@@ -22,3 +22,8 @@ python app.py
 ```
 
 Abrir http://127.0.0.1:5000
+
+Si aparece `FATAL: role "postgres" does not exist`:
+```bash
+DB_USER=$(whoami) DB_PASSWORD='' python app.py
+```
