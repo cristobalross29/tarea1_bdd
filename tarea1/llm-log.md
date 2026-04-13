@@ -7,3 +7,7 @@
 ## Entrada 02
 - Error encontrado: El formulario de inscripción aceptaba envío sin torneo o sin equipo y terminaba en error de base de datos.
 - Cómo se solucionó: Se agregó validación previa de campos requeridos con mensaje claro antes de intentar el INSERT.
+
+## Entrada 03
+- Error encontrado: La inscripción duplicada dependía de capturar excepción SQL y podía entregar feedback inconsistente.
+- Cómo se solucionó: Se agregó pre-chequeo de duplicado en aplicación para responder con mensaje específico antes del INSERT.

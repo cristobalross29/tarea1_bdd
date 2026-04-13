@@ -257,6 +257,18 @@ def inscripcion():
             equipos = cur.fetchall()
             cur.close(); conn.close()
             return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+        cur.execute(
+            "SELECT 1 FROM inscripcion WHERE id_torneo=%s AND id_equipo=%s",
+            (id_torneo, id_equipo),
+        )
+        if cur.fetchone():
+            flash('No se pudo inscribir: el equipo ya está inscrito en ese torneo', 'err')
+            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
+            torneos = cur.fetchall()
+            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+            equipos = cur.fetchall()
+            cur.close(); conn.close()
+            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
         try:
             cur.execute("INSERT INTO inscripcion (id_torneo, id_equipo, grupo) VALUES (%s,%s,%s)", (id_torneo, id_equipo, grupo))
             conn.commit()
