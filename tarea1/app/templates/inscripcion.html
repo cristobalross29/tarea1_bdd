@@ -1,1 +1,28 @@
-{% extends 'base.html' %}{% block content %}<h2>Inscripción equipo a torneo</h2><form method='post'><label>Torneo:</label><select name='id_torneo'>{% for t in torneos %}<option value='{{t.id_torneo}}'>{{t.nombre}}</option>{% endfor %}</select><label>Equipo:</label><select name='id_equipo'>{% for e in equipos %}<option value='{{e.id_equipo}}'>{{e.nombre}}</option>{% endfor %}</select><label>Grupo (opcional A/B):</label><input name='grupo' maxlength='1'><button type='submit'>Inscribir</button></form>{% endblock %}
+{% extends 'base.html' %}
+{% block content %}
+<h2>Inscripción equipo a torneo</h2>
+<form method='post'>
+  <label>Torneo:</label>
+  <select name='id_torneo' required>
+    <option value=''>-- torneo --</option>
+    {% for t in torneos %}
+      <option value='{{t.id_torneo}}' {% if selected_torneo==t.id_torneo %}selected{% endif %}>
+        {{t.nombre}} ({{t.inscritos}}/{{t.max_equipos}})
+      </option>
+    {% endfor %}
+  </select>
+
+  <label>Equipo:</label>
+  <select name='id_equipo' required>
+    <option value=''>-- equipo --</option>
+    {% for e in equipos %}
+      <option value='{{e.id_equipo}}' {% if selected_equipo==e.id_equipo %}selected{% endif %}>{{e.nombre}}</option>
+    {% endfor %}
+  </select>
+
+  <label>Grupo (opcional A/B):</label>
+  <input name='grupo' maxlength='1' value='{{ selected_grupo or "" }}'>
+
+  <button type='submit'>Inscribir</button>
+</form>
+{% endblock %}

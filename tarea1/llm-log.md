@@ -15,3 +15,7 @@
 ## Entrada 04
 - Error encontrado: El rechazo por torneo lleno dependía solo del trigger y no siempre entregaba feedback temprano en la app.
 - Cómo se solucionó: Se añadió pre-chequeo de cupo en la ruta de inscripción y se mantuvo el trigger como respaldo de integridad.
+
+## Entrada 05
+- Error encontrado: El formulario de inscripción no mostraba cupos por torneo y perdía la selección del usuario al fallar una validación.
+- Cómo se solucionó: Se actualizó la vista para mostrar inscritos/max y se preservaron torneo, equipo y grupo en re-render de errores.

@@ -236,39 +236,71 @@ def sponsors():
 @app.route('/inscripcion', methods=['GET','POST'])
 def inscripcion():
     conn = db_conn(); cur = conn.cursor(cursor_factory=RealDictCursor)
+    selected_torneo = None
+    selected_equipo = None
+    selected_grupo = ""
+
+    def _load_form_data():
+        cur.execute("""
+            SELECT t.id_torneo, t.nombre, t.max_equipos, COUNT(i.id_equipo) inscritos
+            FROM torneo t
+            LEFT JOIN inscripcion i ON i.id_torneo=t.id_torneo
+            GROUP BY t.id_torneo, t.nombre, t.max_equipos
+            ORDER BY t.nombre;
+        """)
+        torneos = cur.fetchall()
+        cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
+        equipos = cur.fetchall()
+        return torneos, equipos
+
     if request.method == 'POST':
         id_torneo = request.form.get('id_torneo', type=int)
         id_equipo = request.form.get('id_equipo', type=int)
         grupo_raw = (request.form.get('grupo') or '').strip().upper()
         grupo = grupo_raw or None
+        selected_torneo = id_torneo
+        selected_equipo = id_equipo
+        selected_grupo = grupo_raw
         if not id_torneo or not id_equipo:
             flash("Debe seleccionar torneo y equipo", "err")
-            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
-            torneos = cur.fetchall()
-            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
-            equipos = cur.fetchall()
+            torneos, equipos = _load_form_data()
             cur.close(); conn.close()
-            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+            return render_template(
+                'inscripcion.html',
+                torneos=torneos,
+                equipos=equipos,
+                selected_torneo=selected_torneo,
+                selected_equipo=selected_equipo,
+                selected_grupo=selected_grupo,
+            )
         if grupo not in (None, 'A', 'B'):
             flash("Grupo inválido: use A, B o vacío", "err")
-            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
-            torneos = cur.fetchall()
-            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
-            equipos = cur.fetchall()
+            torneos, equipos = _load_form_data()
             cur.close(); conn.close()
-            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+            return render_template(
+                'inscripcion.html',
+                torneos=torneos,
+                equipos=equipos,
+                selected_torneo=selected_torneo,
+                selected_equipo=selected_equipo,
+                selected_grupo=selected_grupo,
+            )
         cur.execute(
             "SELECT 1 FROM inscripcion WHERE id_torneo=%s AND id_equipo=%s",
             (id_torneo, id_equipo),
         )
         if cur.fetchone():
             flash('No se pudo inscribir: el equipo ya está inscrito en ese torneo', 'err')
-            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
-            torneos = cur.fetchall()
-            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
-            equipos = cur.fetchall()
+            torneos, equipos = _load_form_data()
             cur.close(); conn.close()
-            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+            return render_template(
+                'inscripcion.html',
+                torneos=torneos,
+                equipos=equipos,
+                selected_torneo=selected_torneo,
+                selected_equipo=selected_equipo,
+                selected_grupo=selected_grupo,
+            )
         cur.execute("""
             SELECT t.max_equipos, COUNT(i.id_equipo) inscritos
             FROM torneo t
@@ -279,12 +311,16 @@ def inscripcion():
         cupo = cur.fetchone()
         if cupo and cupo["inscritos"] >= cupo["max_equipos"]:
             flash('No se pudo inscribir: el torneo ya alcanzó su número máximo de equipos', 'err')
-            cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
-            torneos = cur.fetchall()
-            cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
-            equipos = cur.fetchall()
+            torneos, equipos = _load_form_data()
             cur.close(); conn.close()
-            return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+            return render_template(
+                'inscripcion.html',
+                torneos=torneos,
+                equipos=equipos,
+                selected_torneo=selected_torneo,
+                selected_equipo=selected_equipo,
+                selected_grupo=selected_grupo,
+            )
         try:
             cur.execute("INSERT INTO inscripcion (id_torneo, id_equipo, grupo) VALUES (%s,%s,%s)", (id_torneo, id_equipo, grupo))
             conn.commit()
@@ -301,12 +337,16 @@ def inscripcion():
             else:
                 flash(f'Error al inscribir: {msg}', 'err')
 
-    cur.execute("SELECT id_torneo, nombre FROM torneo ORDER BY nombre;")
-    torneos = cur.fetchall()
-    cur.execute("SELECT id_equipo, nombre FROM equipo ORDER BY nombre;")
-    equipos = cur.fetchall()
+    torneos, equipos = _load_form_data()
     cur.close(); conn.close()
-    return render_template('inscripcion.html', torneos=torneos, equipos=equipos)
+    return render_template(
+        'inscripcion.html',
+        torneos=torneos,
+        equipos=equipos,
+        selected_torneo=selected_torneo,
+        selected_equipo=selected_equipo,
+        selected_grupo=selected_grupo,
+    )
 
 
 if __name__ == '__main__':
