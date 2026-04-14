@@ -31,11 +31,9 @@ Desde la carpeta `tarea1/`:
 
 ```powershell
 createdb tarea1
-psql -d tarea1 -f schema.sql
-psql -d tarea1 -f data.sql
+psql -d tarea1 -f schema.sql; psql -d tarea1 -f data.sql
 cd app
-py -m venv .venv
-.venv\Scripts\Activate.ps1
+py -m venv .venv; .\.venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 py app.py
 ```
