@@ -26,7 +26,7 @@ python app.py
 
 Abrir: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-## Ejecutar en Windows (PowerShell, Python 3.12)
+## Levantar en Windows (PowerShell, Python 3.12)
 Desde la carpeta `tarea1/`:
 
 ```powershell
