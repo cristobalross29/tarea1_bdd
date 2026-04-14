@@ -1,1 +1,24 @@
-{% extends 'base.html' %}{% block content %}<h2>Torneos</h2><table><tr><th>Nombre</th><th>Videojuego</th><th>Fechas</th><th>Prize</th><th>Cupo</th></tr>{% for t in torneos %}<tr><td><a href='{{ url_for("torneo_detalle", id_torneo=t.id_torneo) }}'>{{ t.nombre }}</a></td><td>{{ t.videojuego }}</td><td>{{ t.fecha_inicio }} a {{ t.fecha_fin }}</td><td>{{ t.prize_pool_usd }}</td><td>{{ t.max_equipos }}</td></tr>{% endfor %}</table>{% endblock %}
+{% extends "base.html" %}
+{% block content %}
+  <h2>Torneos</h2>
+  <p class="muted">Listado general de torneos disponibles.</p>
+
+  <table>
+    <tr>
+      <th>Nombre</th>
+      <th>Videojuego</th>
+      <th>Fechas</th>
+      <th>Prize</th>
+      <th>Cupo</th>
+    </tr>
+    {% for t in torneos %}
+      <tr>
+        <td><a href="{{ url_for('torneo_detalle', id_torneo=t.id_torneo) }}">{{ t.nombre }}</a></td>
+        <td>{{ t.videojuego }}</td>
+        <td>{{ t.fecha_inicio }} a {{ t.fecha_fin }}</td>
+        <td>{{ t.prize_pool_usd }}</td>
+        <td>{{ t.max_equipos }}</td>
+      </tr>
+    {% endfor %}
+  </table>
+{% endblock %}

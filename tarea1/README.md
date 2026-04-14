@@ -50,3 +50,25 @@ Si tu instalación local no tiene rol `postgres`, ejecuta la app con:
 ```bash
 DB_USER=$(whoami) DB_PASSWORD='' python app.py
 ```
+
+## Ejecutar en Windows (PowerShell)
+Desde la carpeta `tarea1/`:
+
+```powershell
+createdb tarea1
+psql -d tarea1 -f schema.sql
+psql -d tarea1 -f data.sql
+cd app
+py -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+py app.py
+```
+
+Abrir: [http://127.0.0.1:5000](http://127.0.0.1:5000)
+
+Si PowerShell bloquea la activacion del entorno virtual:
+
+```powershell
+Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
+```
