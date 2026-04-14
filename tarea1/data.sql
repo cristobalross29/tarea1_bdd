@@ -3,7 +3,9 @@ BEGIN;
 INSERT INTO TORNEO (nombre, videojuego, fecha_inicio, fecha_fin, prize_pool_usd, max_equipos) VALUES
 ('Andes Championship 2026', 'Valorant', '2026-04-01', '2026-04-10', 50000, 8),
 ('Pacific Clash 2026', 'League of Legends', '2026-05-05', '2026-05-12', 80000, 10),
-('Santiago Open 2026', 'Valorant', '2026-06-01', '2026-06-08', 30000, 6);
+('Santiago Open 2026', 'Valorant', '2026-06-01', '2026-06-08', 30000, 6),
+('Patagonia Masters 2026', 'Valorant', '2026-07-01', '2026-07-08', 25000, 8),
+('Southern Rumble 2026', 'Counter-Strike 2', '2026-08-01', '2026-08-09', 45000, 8);
 
 INSERT INTO EQUIPO (nombre, fecha_creacion) VALUES
 ('LlamaStrike', '2025-01-15'),('CondorCore', '2025-02-10'),('PumaPulse', '2025-03-05'),('VolcanoFive', '2025-03-11'),
@@ -34,15 +36,20 @@ SET capitan_gamertag = format('t%sp1', e.id_equipo);
 INSERT INTO INSCRIPCION (id_torneo, id_equipo, grupo) VALUES
 (1,1,'A'),(1,2,'A'),(1,3,'A'),(1,4,'A'),(1,5,'B'),(1,6,'B'),(1,7,'B'),(1,8,'B'),
 (2,1,NULL),(2,2,NULL),(2,3,NULL),(2,4,NULL),(2,5,NULL),(2,6,NULL),(2,7,NULL),(2,8,NULL),(2,9,NULL),(2,10,NULL),
-(3,1,NULL),(3,3,NULL),(3,5,NULL),(3,7,NULL),(3,9,NULL);
+(3,1,NULL),(3,3,NULL),(3,5,NULL),(3,7,NULL),(3,9,NULL),
+(4,2,'A'),(4,4,'A'),(4,6,'B'),
+(5,1,'A'),(5,2,'A'),(5,3,'A'),(5,4,'A'),(5,5,'B'),(5,6,'B'),(5,7,'B');
 
 INSERT INTO SPONSOR (nombre, industria) VALUES
-('HyperTech','tecnologia'),('PowerDrink','bebidas'),('NeoWear','ropa'),('CloudNet','tecnologia'),('ArenaBank','finanzas');
+('HyperTech','tecnologia'),('PowerDrink','bebidas'),('NeoWear','ropa'),('CloudNet','tecnologia'),
+('ArenaBank','finanzas'),('GameFuel','bebidas'),('ByteAir','aerolinea');
 
 INSERT INTO SPONSOR_TORNEO (id_sponsor, id_torneo, monto_usd) VALUES
 (1,1,12000),(2,1,9000),(3,1,7000),(4,1,6000),
 (1,2,13000),(2,2,10000),(5,2,9000),
-(1,3,7000),(3,3,5000),(4,3,4500),(5,3,4000);
+(1,3,7000),(3,3,5000),(4,3,4500),(5,3,4000),
+(1,4,8000),(3,4,4200),(6,4,3000),
+(2,5,5000),(4,5,4500),(7,5,3500);
 
 INSERT INTO PARTIDA (id_torneo, fecha_hora_programada, fase, equipo_a_id, equipo_b_id, puntaje_equipo_a, puntaje_equipo_b) VALUES
 (1,'2026-04-01 10:00','grupos',1,2,13,9),
@@ -62,8 +69,23 @@ INSERT INTO PARTIDA (id_torneo, fecha_hora_programada, fase, equipo_a_id, equipo
 (1,'2026-04-08 20:00','final',3,7,13,11),
 (2,'2026-05-05 15:00','grupos',1,9,2,1),
 (2,'2026-05-05 18:00','grupos',2,10,0,2),
+(2,'2026-05-06 15:00','grupos',1,10,2,0),
+(2,'2026-05-06 18:00','grupos',2,9,1,1),
+(2,'2026-05-07 15:00','grupos',1,2,3,2),
+(2,'2026-05-07 18:00','grupos',9,10,0,1),
 (3,'2026-06-02 14:00','grupos',1,3,1,0),
-(3,'2026-06-02 17:00','grupos',5,7,0,1);
+(3,'2026-06-02 17:00','grupos',5,7,0,1),
+(3,'2026-06-03 14:00','grupos',1,5,2,2),
+(3,'2026-06-03 17:00','grupos',3,7,0,1),
+(4,'2026-07-02 14:00','grupos',2,4,1,0),
+(4,'2026-07-02 17:00','grupos',2,6,0,1),
+(4,'2026-07-03 14:00','grupos',4,6,2,2),
+(5,'2026-08-02 14:00','grupos',1,2,16,14),
+(5,'2026-08-02 17:00','grupos',3,4,12,16),
+(5,'2026-08-03 14:00','grupos',5,6,13,9),
+(5,'2026-08-03 17:00','cuartos_final',2,4,16,12),
+(5,'2026-08-04 17:00','semifinal',2,5,16,8),
+(5,'2026-08-05 19:00','final',2,7,13,16);
 
 INSERT INTO ESTADISTICA_INDIVIDUAL (id_partida, gamertag, kos, restarts, assists)
 SELECT p.id_partida,
