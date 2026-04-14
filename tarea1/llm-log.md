@@ -1,41 +1,72 @@
 # LLM Log
 
-## Entrada 01
-- Error encontrado: El LLM log estaba en formato extenso con secciones no solicitadas.
-- Cómo se solucionó: Se reemplazó por un formato breve con entradas que solo incluyen error encontrado y solución aplicada.
+## 1) Cómo usamos LLM (flujo real)
+Partimos pidiéndole al LLM una base técnica y un plan de implementación, antes de programar, para ordenar la tarea completa desde el enunciado.
 
-## Entrada 02
-- Error encontrado: El formulario de inscripción aceptaba envío sin torneo o sin equipo y terminaba en error de base de datos.
-- Cómo se solucionó: Se agregó validación previa de campos requeridos con mensaje claro antes de intentar el INSERT.
+Prompt inicial usado (resumen del que nos funcionó):
+```
+Quiero que trabajes como arquitecto técnico y planificador de implementación para esta tarea.
+Lee completo el PDF del enunciado antes de responder.
+No programes todavía.
+Propón stack, orden de implementación, diseño de BD, restricciones clave, consultas complejas y plan para la app web.
+Prioriza simplicidad, cumplimiento estricto del enunciado y facilidad de defensa.
+PostgreSQL 14+, localhost, SQL explícito sin ORM.
+Marca ambigüedades y decisiones discutibles.
+```
 
-## Entrada 03
-- Error encontrado: La inscripción duplicada dependía de capturar excepción SQL y podía entregar feedback inconsistente.
-- Cómo se solucionó: Se agregó pre-chequeo de duplicado en aplicación para responder con mensaje específico antes del INSERT.
+Después de eso, fuimos iterando en conjunto: el LLM nos hizo preguntas de decisiones donde no estábamos seguros, fuimos moldeando el plan hasta dejarlo claro y recién ahí lo ejecutamos.
 
-## Entrada 04
-- Error encontrado: El rechazo por torneo lleno dependía solo del trigger y no siempre entregaba feedback temprano en la app.
-- Cómo se solucionó: Se añadió pre-chequeo de cupo en la ruta de inscripción y se mantuvo el trigger como respaldo de integridad.
+## 2) En qué partes usamos LLM
+- Planificación global (orden de trabajo y puntos de riesgo).
+- Revisión de esquema y restricciones de integridad.
+- Apoyo en consultas SQL de Parte C (ranking, sponsors, evolución por fase).
+- Apoyo visual básico para templates (sin diseño elaborado, solo legibilidad y orden).
+- Apoyo puntual para depurar errores complejos que detectamos al probar.
 
-## Entrada 05
-- Error encontrado: El formulario de inscripción no mostraba cupos por torneo y perdía la selección del usuario al fallar una validación.
-- Cómo se solucionó: Se actualizó la vista para mostrar inscritos/max y se preservaron torneo, equipo y grupo en re-render de errores.
+## 3) Qué obtuvimos
+- Un plan de trabajo claro y ejecutable de inicio a fin.
+- Una base de datos y aplicación web funcionales para el flujo principal.
+- Consultas SQL operativas para las funcionalidades pedidas.
+- Mejoras de UX básicas (mensajes claros y formularios más usables).
 
-## Entrada 06
-- Error encontrado: Los datos iniciales dejaban todos los torneos completos y no permitían demostrar una inscripción exitosa con seeds limpios.
-- Cómo se solucionó: Se liberó un cupo en un torneo secundario de `data.sql` manteniendo el torneo principal 8/8 y el caso de torneo lleno.
+Importante: aunque el plan estaba bien trabajado, al ejecutar y probar igual aparecieron errores. Eso se corrigió con pruebas + ajustes manuales.
 
-## Entrada 07
-- Error encontrado: No existía una validación automática mínima de rutas y flujo de inscripción (éxito, duplicado y torneo lleno).
-- Cómo se solucionó: Se agregó un smoke test con `Flask test_client` y chequeos SQL para verificar comportamiento end-to-end.
+## 4) Errores detectados probando casos (y cómo los resolvimos)
 
-## Entrada 08
-- Error encontrado: La evolución por fase mezclaba cuartos de final con semifinal/final en la comparación pedida por el enunciado.
-- Cómo se solucionó: Se ajustó la consulta para comparar explícitamente `grupos` vs `eliminacion (semifinal+final)` sin eliminar `cuartos_final` del esquema.
+### A) Errores simples (detectados en pruebas y corregidos por nosotros)
+- Error encontrado: Inscripción aceptaba envío sin torneo/equipo y terminaba en error de BD.
+- Cómo se solucionó: Validación de campos requeridos en backend antes del INSERT.
 
-## Entrada 09
-- Error encontrado: El README no dejaba una validación mínima automatizada ni una guía de ejecución suficientemente precisa para reproducir el flujo completo.
-- Cómo se solucionó: Se actualizó README con stack, variables, 5 comandos de arranque y ejecución del smoke test de verificación.
+- Error encontrado: Si fallaba validación, el formulario perdía selección previa.
+- Cómo se solucionó: Mantener `id_torneo`, `id_equipo` y `grupo` al re-render.
 
-## Entrada 10
-- Error encontrado: El README tenía placeholders en la sección de integrantes y no cumplía el formato final de entrega.
-- Cómo se solucionó: Se reemplazaron los placeholders por los nombres y RUT reales de los tres integrantes.
+- Error encontrado: No se mostraba ocupación de cupos en la vista de inscripción.
+- Cómo se solucionó: Mostrar `inscritos/max` por torneo en el selector.
+
+- Error encontrado: Seeds no permitían demostrar inscripción exitosa fácilmente.
+- Cómo se solucionó: Ajustar `data.sql` para dejar un torneo secundario con cupo libre.
+
+### B) Errores más complejos (detectados en pruebas, pedimos consejo al LLM y luego implementamos nosotros)
+- Error encontrado: Evolución por fase mezclaba bloques y no quedaba estrictamente en formato enunciado (`grupos` vs `semifinal+final`).
+- Cómo se solucionó: Pedimos orientación para la idea SQL y luego implementamos/validamos manualmente la consulta final.
+
+- Error encontrado: Mensajes de inscripción eran inconsistentes cuando todo dependía de excepción SQL.
+- Cómo se solucionó: Pedimos alternativas, y aplicamos nosotros pre-chequeos de duplicado y cupo en backend, manteniendo BD como respaldo.
+
+Prompt corto de ejemplo para estos casos:
+```
+Probamos estos casos y fallan: [caso 1], [caso 2].
+No quiero reescribir toda la app.
+Propón una corrección mínima, compatible con PostgreSQL y SQL explícito, y explica cómo validar que quedó bien.
+```
+
+## 5) Casos donde el LLM se equivocó o no fue útil
+- Si el prompt quedaba ambiguo, el LLM asumía cosas no deseadas (por ejemplo, mezclar fases en estadísticas o proponer cambios más grandes de los necesarios).
+- En casos borde, tendía a dejar vacíos de validación si no se especificaban explícitamente (duplicados, cupo, estado del formulario tras error).
+- En documentación, al inicio propuso formatos que no coincidían con la exigencia exacta de transparencia.
+
+## 6) Conclusión de uso de LLM
+- El LLM fue útil como apoyo para plan y para destrabar problemas complejos.
+- Los errores se detectaron principalmente al probar casos reales.
+- Varios arreglos fueron directos y los implementamos nosotros.
+- En los casos complejos, usamos al LLM como asesor, pero la solución final se ajustó y validó manualmente en código y BD.
