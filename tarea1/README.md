@@ -13,7 +13,7 @@ Valores por defecto del enunciado:
 - `DB_PASSWORD=postgres`
 - `DB_NAME=tarea1`
 
-## Levantar proyecto
+## Levantar proyecto (Unix)
 Desde la carpeta `tarea1/`:
 
 ```bash
