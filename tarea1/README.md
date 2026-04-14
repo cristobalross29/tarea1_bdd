@@ -5,11 +5,6 @@
 - Iñaki Guridi - 24642673
 - Cristobal Ross - 24645532
 
-## Stack y gestor de paquetes
-- Backend: Python + Flask
-- Base de datos: PostgreSQL 14+
-- Gestor de paquetes Python: `pip` (con `requirements.txt`)
-
 ## Variables de entorno para BD
 Valores por defecto del enunciado:
 - `DB_HOST=localhost`
@@ -18,7 +13,7 @@ Valores por defecto del enunciado:
 - `DB_PASSWORD=postgres`
 - `DB_NAME=tarea1`
 
-## Levantar proyecto (5 comandos)
+## Levantar proyecto
 Desde la carpeta `tarea1/`:
 
 ```bash
@@ -30,26 +25,6 @@ python app.py
 ```
 
 Abrir: [http://127.0.0.1:5000](http://127.0.0.1:5000)
-
-## Validación mínima recomendada
-Con la app levantada en entorno virtual (`tarea1/app`):
-
-```bash
-python smoke_test.py
-```
-
-El script valida:
-- Rutas principales (`/torneos`, `/estadisticas`, `/busqueda`, `/sponsors`, `/inscripcion`).
-- Inscripción rechazada por torneo lleno.
-- Inscripción rechazada por duplicado.
-- Inscripción exitosa y persistencia en BD.
-
-## Nota de conexión local
-Si tu instalación local no tiene rol `postgres`, ejecuta la app con:
-
-```bash
-DB_USER=$(whoami) DB_PASSWORD='' python app.py
-```
 
 ## Ejecutar en Windows (PowerShell)
 Desde la carpeta `tarea1/`:
@@ -67,8 +42,8 @@ py app.py
 
 Abrir: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-Si PowerShell bloquea la activacion del entorno virtual:
 
-```powershell
-Set-ExecutionPolicy -Scope Process -ExecutionPolicy Bypass
-```
+## Stack y gestor de paquetes
+- Backend: Python + Flask
+- Base de datos: PostgreSQL 14+
+- Gestor de paquetes Python: `pip` (con `requirements.txt`)
