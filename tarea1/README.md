@@ -26,14 +26,13 @@ python app.py
 
 Abrir: [http://127.0.0.1:5000](http://127.0.0.1:5000)
 
-## Ejecutar en Windows (PowerShell)
+## Ejecutar en Windows (PowerShell, Python 3.12)
 Desde la carpeta `tarea1/`:
 
 ```powershell
 createdb tarea1
 psql -d tarea1 -f schema.sql; psql -d tarea1 -f data.sql
-cd app
-py -m venv .venv; .\.venv\Scripts\Activate.ps1
+ cd app; py -3.12 -m venv .venv; .venv\Scripts\Activate.ps1
 pip install -r requirements.txt
 py app.py
 ```
