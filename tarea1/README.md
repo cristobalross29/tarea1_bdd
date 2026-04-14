@@ -1,9 +1,9 @@
 # Tarea 1 - IIC2413
 
 ## Integrantes
-- Gonzalo Molina - 21528001-2
-- Iñaki Guridi - 21949205-7
-- Cristobal Ross - 21942701-8
+- Gonzalo Molina - 24642746
+- Iñaki Guridi - 24642673
+- Cristobal Ross - 24645532
 
 ## Stack y gestor de paquetes
 - Backend: Python + Flask
